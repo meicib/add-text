@@ -15,6 +15,7 @@ const saveImageButton = document.getElementById("saveImage");
 const imageCanvas = document.getElementById("imageCanvas");
 const textCanvas = document.getElementById("textCanvas");
 const uiCanvas = document.getElementById("uiCanvas");
+const canvasWrapper = document.getElementById("canvasWrapper");
 
 const imageCtx = imageCanvas.getContext("2d");
 const textCtx = textCanvas.getContext("2d");
@@ -22,20 +23,48 @@ const uiCtx = uiCanvas.getContext("2d");
 
 const state = {
   image: null,
+  imageLayout: null,
+  canvasSize: { width: 0, height: 0, dpr: 1 },
   polygons: [{ points: [], closed: false }],
   activePolygonIndex: 0,
   dragging: null,
 };
 
-const pointRadius = 8;
+const pointRadius = 4;
 
-function resizeCanvases(width, height) {
-  imageCanvas.width = width;
-  imageCanvas.height = height;
-  textCanvas.width = width;
-  textCanvas.height = height;
-  uiCanvas.width = width;
-  uiCanvas.height = height;
+function resizeCanvasesToWrapper() {
+  const rect = canvasWrapper.getBoundingClientRect();
+  const width = Math.max(1, Math.floor(rect.width));
+  const height = Math.max(1, Math.floor(rect.height));
+  const dpr = window.devicePixelRatio || 1;
+
+  state.canvasSize = { width, height, dpr };
+
+  imageCanvas.width = Math.floor(width * dpr);
+  imageCanvas.height = Math.floor(height * dpr);
+  textCanvas.width = Math.floor(width * dpr);
+  textCanvas.height = Math.floor(height * dpr);
+  uiCanvas.width = Math.floor(width * dpr);
+  uiCanvas.height = Math.floor(height * dpr);
+
+  imageCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  textCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  uiCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  if (state.image) {
+    const scale = Math.min(width / state.image.naturalWidth, height / state.image.naturalHeight);
+    const drawWidth = state.image.naturalWidth * scale;
+    const drawHeight = state.image.naturalHeight * scale;
+    const offsetX = (width - drawWidth) / 2;
+    const offsetY = (height - drawHeight) / 2;
+    state.imageLayout = {
+      x: offsetX,
+      y: offsetY,
+      width: drawWidth,
+      height: drawHeight,
+      scale,
+    };
+  }
 
   renderAll();
 }
@@ -47,9 +76,10 @@ function renderAll() {
 }
 
 function drawImage() {
-  imageCtx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
-  if (state.image) {
-    imageCtx.drawImage(state.image, 0, 0, imageCanvas.width, imageCanvas.height);
+  imageCtx.clearRect(0, 0, state.canvasSize.width, state.canvasSize.height);
+  if (state.image && state.imageLayout) {
+    const { x, y, width, height } = state.imageLayout;
+    imageCtx.drawImage(state.image, x, y, width, height);
   }
 }
 
@@ -136,7 +166,7 @@ function drawPolygonPath(ctx, points) {
 }
 
 function renderText() {
-  textCtx.clearRect(0, 0, textCanvas.width, textCanvas.height);
+  textCtx.clearRect(0, 0, state.canvasSize.width, state.canvasSize.height);
   if (!state.polygons.length) {
     return;
   }
@@ -238,7 +268,7 @@ function renderText() {
 }
 
 function renderUI() {
-  uiCtx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
+  uiCtx.clearRect(0, 0, state.canvasSize.width, state.canvasSize.height);
   const hasPoints = state.polygons.some((polygon) => polygon.points.length);
   if (!hasPoints) {
     return;
@@ -280,19 +310,36 @@ function renderUI() {
 
 function canvasPointFromEvent(event) {
   const rect = uiCanvas.getBoundingClientRect();
-  const scaleX = uiCanvas.width / rect.width;
-  const scaleY = uiCanvas.height / rect.height;
   return {
-    x: (event.clientX - rect.left) * scaleX,
-    y: (event.clientY - rect.top) * scaleY,
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top,
   };
 }
 
-function findPointIndex(points, point) {
+function isPointInsideImage(point) {
+  if (!state.imageLayout) {
+    return false;
+  }
+  const { x, y, width, height } = state.imageLayout;
+  return point.x >= x && point.x <= x + width && point.y >= y && point.y <= y + height;
+}
+
+function clampPointToImage(point) {
+  if (!state.imageLayout) {
+    return point;
+  }
+  const { x, y, width, height } = state.imageLayout;
+  return {
+    x: Math.min(Math.max(point.x, x), x + width),
+    y: Math.min(Math.max(point.y, y), y + height),
+  };
+}
+
+function findPointIndex(points, point, hitRadius) {
   return points.findIndex((p) => {
     const dx = p.x - point.x;
     const dy = p.y - point.y;
-    return Math.sqrt(dx * dx + dy * dy) <= pointRadius * 1.5;
+    return Math.sqrt(dx * dx + dy * dy) <= hitRadius;
   });
 }
 
@@ -314,9 +361,10 @@ uiCanvas.addEventListener("pointerdown", (event) => {
     return;
   }
   const point = canvasPointFromEvent(event);
+  const hitRadius = pointRadius * 1.5;
   for (let i = 0; i < state.polygons.length; i += 1) {
     const polygon = state.polygons[i];
-    const index = findPointIndex(polygon.points, point);
+    const index = findPointIndex(polygon.points, point, hitRadius);
     if (index !== -1) {
       state.activePolygonIndex = i;
       state.dragging = { polygonIndex: i, pointIndex: index };
@@ -331,7 +379,7 @@ uiCanvas.addEventListener("pointermove", (event) => {
   if (!state.dragging) {
     return;
   }
-  const point = canvasPointFromEvent(event);
+  const point = clampPointToImage(canvasPointFromEvent(event));
   const polygon = state.polygons[state.dragging.polygonIndex];
   polygon.points[state.dragging.pointIndex] = point;
   renderAll();
@@ -349,6 +397,10 @@ uiCanvas.addEventListener("click", (event) => {
     return;
   }
   const point = canvasPointFromEvent(event);
+  if (!isPointInsideImage(point)) {
+    return;
+  }
+  const hitRadius = pointRadius * 2;
   const polygon = getActivePolygon();
   if (polygon.closed) {
     return;
@@ -357,7 +409,7 @@ uiCanvas.addEventListener("click", (event) => {
     const firstPoint = polygon.points[0];
     const dx = firstPoint.x - point.x;
     const dy = firstPoint.y - point.y;
-    if (Math.sqrt(dx * dx + dy * dy) <= pointRadius * 2) {
+    if (Math.sqrt(dx * dx + dy * dy) <= hitRadius) {
       closeActivePolygon();
       renderAll();
       return;
@@ -382,10 +434,21 @@ imageInput.addEventListener("change", (event) => {
   const image = new Image();
   image.onload = () => {
     state.image = image;
-    resizeCanvases(image.naturalWidth, image.naturalHeight);
+    state.polygons = [{ points: [], closed: false }];
+    state.activePolygonIndex = 0;
+    state.dragging = null;
+    resizeCanvasesToWrapper();
     URL.revokeObjectURL(url);
+    const emptyEl = document.getElementById("canvasEmpty");
+    if (emptyEl) emptyEl.classList.add("hidden");
   };
   image.src = url;
+});
+
+window.addEventListener("resize", () => {
+  if (state.image) {
+    resizeCanvasesToWrapper();
+  }
 });
 
 function updateBlendMode() {
@@ -433,4 +496,4 @@ saveImageButton.addEventListener("click", () => {
 });
 
 updateBlendMode();
-renderAll();
+resizeCanvasesToWrapper();
