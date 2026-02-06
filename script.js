@@ -189,7 +189,7 @@ function renderText() {
   textCtx.textBaseline = "middle";
 
   const lineHeight = fontSize * 1.2;
-  const textInset = 4;
+  const textInset = 10;
   const tokens = tokenizeText(textInput.value);
   let tokenIndex = 0;
 
