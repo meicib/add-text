@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Photo Text Overlay</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <section class="controls">
+        <div class="control-group">
+          <label class="button">
+            <input id="imageInput" type="file" accept="image/*" />
+            Upload Photo
+          </label>
+          <button id="clearPolygon" type="button">Clear Polygons</button>
+        </div>
+
+        <div class="control-grid">
+          <label>
+            Text
+            <textarea id="textInput" rows="4" placeholder="Type text here..."></textarea>
+          </label>
+
+          <label>
+            Font Size
+            <input id="fontSize" type="number" min="10" max="120" value="36" />
+          </label>
+
+          <label>
+            Font Family
+            <select id="fontFamily">
+              <option value="Arial">Arial</option>
+              <option value="Helvetica">Helvetica</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Courier New">Courier New</option>
+              <option value="Impact">Impact</option>
+            </select>
+          </label>
+
+          <label>
+            Text Color
+            <input id="textColor" type="color" value="#ffffff" />
+          </label>
+
+          <label>
+            Outline Color
+            <input id="outlineColor" type="color" value="#000000" />
+          </label>
+
+          <label>
+            Outline Width
+            <input id="outlineWidth" type="number" min="0" max="12" value="2" />
+          </label>
+
+          <label class="inline">
+            <input id="highlightText" type="checkbox" checked />
+            Highlight Text
+          </label>
+
+          <label>
+            Background Color
+            <input id="bgColor" type="color" value="#000000" />
+          </label>
+
+          <label>
+            Highlight Opacity
+            <input id="bgOpacity" type="number" min="0" max="1" step="0.05" value="0.4" />
+          </label>
+
+          <label>
+            Blend Mode
+            <select id="blendMode">
+              <option value="normal">normal</option>
+              <option value="multiply">multiply</option>
+              <option value="screen">screen</option>
+              <option value="overlay">overlay</option>
+              <option value="darken">darken</option>
+              <option value="lighten">lighten</option>
+              <option value="difference">difference (invert)</option>
+              <option value="exclusion">exclusion</option>
+            </select>
+          </label>
+
+          <button id="saveImage" type="button">Save Image</button>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <div id="canvasWrapper" class="canvas-wrapper">
+          <canvas id="imageCanvas"></canvas>
+          <canvas id="textCanvas"></canvas>
+          <canvas id="uiCanvas"></canvas>
+        </div>
+        <div class="hint">
+          <p>Click to add polygon points. Click the first point to close. Drag points to adjust. Each closed polygon becomes a new text region.</p>
+        </div>
+      </section>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

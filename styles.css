@@ -1,0 +1,150 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: #0f1115;
+  color: #f6f7fb;
+}
+
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+}
+
+header {
+  margin-bottom: 24px;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+}
+
+.controls {
+  background: #161a22;
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.control-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.control-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+label.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+textarea {
+  resize: vertical;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #2b3140;
+  background: #0f131a;
+  color: #f6f7fb;
+  min-height: 80px;
+}
+
+input[type="number"],
+select,
+input[type="color"] {
+  width: 100%;
+}
+
+input[type="number"] {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #2b3140;
+  background: #0f131a;
+  color: #f6f7fb;
+}
+
+button,
+.button {
+  appearance: none;
+  border: none;
+  background: #2760ff;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+button:hover,
+.button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(39, 96, 255, 0.3);
+}
+
+button:active,
+.button:active {
+  transform: translateY(0);
+}
+
+.button input {
+  display: none;
+}
+
+.workspace {
+  display: grid;
+  gap: 16px;
+}
+
+.canvas-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid #2a3142;
+  background: #0b0d12;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+#textCanvas {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: normal;
+}
+
+#uiCanvas {
+  position: absolute;
+  inset: 0;
+}
+
+.hint {
+  font-size: 14px;
+  color: #9aa4bd;
+}
