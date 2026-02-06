@@ -4,100 +4,152 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Photo Text Overlay</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="page">
-      <section class="controls">
-        <div class="control-group">
-          <label class="button">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-left">
+          <h1>Photo Text Overlay</h1>
+          <p class="subtitle">Upload · Draw · Type · Export</p>
+        </div>
+        <div class="header-actions">
+          <label class="btn btn-outline" tabindex="0">
             <input id="imageInput" type="file" accept="image/*" />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             Upload Photo
           </label>
-          <button id="clearPolygon" type="button">Clear Polygons</button>
+          <button id="saveImage" class="btn btn-primary" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+          </button>
         </div>
+      </header>
 
-        <div class="control-grid">
-          <label>
-            Text
-            <textarea id="textInput" rows="4" placeholder="Type text here..."></textarea>
-          </label>
+      <!-- Main layout -->
+      <div class="layout">
+        <!-- Canvas -->
+        <main class="workspace">
+          <div id="canvasWrapper" class="canvas-wrapper">
+            <canvas id="imageCanvas"></canvas>
+            <canvas id="textCanvas"></canvas>
+            <canvas id="uiCanvas"></canvas>
+            <div class="canvas-empty" id="canvasEmpty">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>Upload a photo to begin</span>
+            </div>
+          </div>
+          <p class="hint">Click to place polygon vertices · Click the first point to close · Drag to adjust · Each closed region holds text</p>
+        </main>
 
-          <label>
-            Font Size
-            <input id="fontSize" type="number" min="10" max="120" value="36" />
-          </label>
+        <!-- Sidebar -->
+        <aside class="sidebar">
+          <!-- Text -->
+          <fieldset class="panel">
+            <legend>Text</legend>
+            <label>
+              <textarea id="textInput" rows="4" placeholder="Type your text here…"></textarea>
+            </label>
+            <div class="row-2">
+              <label>
+                <span class="label-text">Size</span>
+                <input id="fontSize" type="number" min="10" max="200" value="36" />
+              </label>
+              <label>
+                <span class="label-text">Font</span>
+                <select id="fontFamily">
+                  <option value="Inter">Inter</option>
+                  <option value="Arial">Arial</option>
+                  <option value="Helvetica">Helvetica</option>
+                  <option value="Times New Roman">Times New Roman</option>
+                  <option value="Georgia">Georgia</option>
+                  <option value="Courier New">Courier New</option>
+                  <option value="Impact">Impact</option>
+                </select>
+              </label>
+            </div>
+          </fieldset>
 
-          <label>
-            Font Family
-            <select id="fontFamily">
-              <option value="Arial">Arial</option>
-              <option value="Helvetica">Helvetica</option>
-              <option value="Times New Roman">Times New Roman</option>
-              <option value="Georgia">Georgia</option>
-              <option value="Courier New">Courier New</option>
-              <option value="Impact">Impact</option>
-            </select>
-          </label>
+          <!-- Color -->
+          <fieldset class="panel">
+            <legend>Color &amp; Outline</legend>
+            <div class="row-2">
+              <label>
+                <span class="label-text">Fill</span>
+                <div class="color-input">
+                  <input id="textColor" type="color" value="#ffffff" />
+                </div>
+              </label>
+              <label>
+                <span class="label-text">Outline</span>
+                <div class="color-input">
+                  <input id="outlineColor" type="color" value="#000000" />
+                </div>
+              </label>
+            </div>
+            <label>
+              <span class="label-text">Outline Width</span>
+              <input id="outlineWidth" type="number" min="0" max="12" value="2" />
+            </label>
+          </fieldset>
 
-          <label>
-            Text Color
-            <input id="textColor" type="color" value="#ffffff" />
-          </label>
+          <!-- Highlight -->
+          <fieldset class="panel">
+            <legend>Highlight</legend>
+            <label class="toggle-row">
+              <span class="label-text">Enable</span>
+              <input id="highlightText" type="checkbox" checked />
+            </label>
+            <div class="row-2">
+              <label>
+                <span class="label-text">Color</span>
+                <div class="color-input">
+                  <input id="bgColor" type="color" value="#000000" />
+                </div>
+              </label>
+              <label>
+                <span class="label-text">Opacity</span>
+                <input id="bgOpacity" type="number" min="0" max="1" step="0.05" value="0.4" />
+              </label>
+            </div>
+          </fieldset>
 
-          <label>
-            Outline Color
-            <input id="outlineColor" type="color" value="#000000" />
-          </label>
+          <!-- Blend -->
+          <fieldset class="panel">
+            <legend>Blend Mode</legend>
+            <label>
+              <select id="blendMode">
+                <option value="normal">Normal</option>
+                <option value="multiply">Multiply</option>
+                <option value="screen">Screen</option>
+                <option value="overlay">Overlay</option>
+                <option value="darken">Darken</option>
+                <option value="lighten">Lighten</option>
+                <option value="difference">Difference</option>
+                <option value="exclusion">Exclusion</option>
+              </select>
+            </label>
+          </fieldset>
 
-          <label>
-            Outline Width
-            <input id="outlineWidth" type="number" min="0" max="12" value="2" />
-          </label>
+          <!-- Polygon -->
+          <fieldset class="panel">
+            <legend>Regions</legend>
+            <button id="clearPolygon" class="btn btn-subtle btn-block" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              Clear All Regions
+            </button>
+          </fieldset>
 
-          <label class="inline">
-            <input id="highlightText" type="checkbox" checked />
-            Highlight Text
-          </label>
-
-          <label>
-            Background Color
-            <input id="bgColor" type="color" value="#000000" />
-          </label>
-
-          <label>
-            Highlight Opacity
-            <input id="bgOpacity" type="number" min="0" max="1" step="0.05" value="0.4" />
-          </label>
-
-          <label>
-            Blend Mode
-            <select id="blendMode">
-              <option value="normal">normal</option>
-              <option value="multiply">multiply</option>
-              <option value="screen">screen</option>
-              <option value="overlay">overlay</option>
-              <option value="darken">darken</option>
-              <option value="lighten">lighten</option>
-              <option value="difference">difference (invert)</option>
-              <option value="exclusion">exclusion</option>
-            </select>
-          </label>
-
-          <button id="saveImage" type="button">Save Image</button>
-        </div>
-      </section>
-
-      <section class="workspace">
-        <div id="canvasWrapper" class="canvas-wrapper">
-          <canvas id="imageCanvas"></canvas>
-          <canvas id="textCanvas"></canvas>
-          <canvas id="uiCanvas"></canvas>
-        </div>
-        <div class="hint">
-          <p>Click to add polygon points. Click the first point to close. Drag points to adjust. Each closed polygon becomes a new text region.</p>
-        </div>
-      </section>
+          <p class="sidebar-footer">© 2026</p>
+        </aside>
+      </div>
     </div>
 
     <script src="script.js"></script>
