@@ -12,7 +12,7 @@
   --radius-lg: 14px;
   --shadow:    0 1px 3px rgba(44, 39, 36, 0.06), 0 6px 24px rgba(44, 39, 36, 0.05);
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-display: "Playfair Display", Georgia, serif;
+  --font-display: "Times New Roman", Times, serif;
 }
 
 /* ───────────────── Reset ───────────────── */
