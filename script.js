@@ -1,5 +1,6 @@
 const imageInput = document.getElementById("imageInput");
 const clearPolygonButton = document.getElementById("clearPolygon");
+const deletePolygonButton = document.getElementById("deletePolygon");
 const textInput = document.getElementById("textInput");
 const fontSizeInput = document.getElementById("fontSize");
 const fontFamilySelect = document.getElementById("fontFamily");
@@ -28,6 +29,7 @@ const state = {
   polygons: [{ points: [], closed: false }],
   activePolygonIndex: 0,
   dragging: null,
+  suppressNextClick: false,
 };
 
 const pointRadius = 4;
@@ -187,6 +189,7 @@ function renderText() {
   textCtx.textBaseline = "middle";
 
   const lineHeight = fontSize * 1.2;
+  const textInset = 4;
   const tokens = tokenizeText(textInput.value);
   let tokenIndex = 0;
 
@@ -196,16 +199,20 @@ function renderText() {
     }
 
     const { minY, maxY } = getPolygonBounds(polygon.points);
+    const insetMinY = minY + textInset;
+    const insetMaxY = maxY - textInset;
 
     textCtx.save();
     drawPolygonPath(textCtx, polygon.points);
     textCtx.clip();
 
-    for (let y = minY + lineHeight / 2; y <= maxY - lineHeight / 2; y += lineHeight) {
+    for (let y = insetMinY + lineHeight / 2; y <= insetMaxY - lineHeight / 2; y += lineHeight) {
       if (tokenIndex >= tokens.length) {
         break;
       }
-      const spans = getLineSpans(polygon.points, y);
+      const spans = getLineSpans(polygon.points, y)
+        .map(([start, end]) => [start + textInset, end - textInset])
+        .filter(([start, end]) => end - start > 1);
       if (!spans.length) {
         continue;
       }
@@ -351,9 +358,31 @@ function closeActivePolygon() {
   const polygon = getActivePolygon();
   if (polygon.points.length >= 3) {
     polygon.closed = true;
+    ensureOpenPolygon();
+  }
+}
+
+function ensureOpenPolygon() {
+  const hasOpen = state.polygons.some((polygon) => !polygon.closed);
+  if (!hasOpen) {
     state.polygons.push({ points: [], closed: false });
     state.activePolygonIndex = state.polygons.length - 1;
   }
+}
+
+function deleteActivePolygon() {
+  if (!state.polygons.length) {
+    return;
+  }
+  if (state.polygons.length === 1) {
+    state.polygons = [{ points: [], closed: false }];
+    state.activePolygonIndex = 0;
+    return;
+  }
+
+  state.polygons.splice(state.activePolygonIndex, 1);
+  state.activePolygonIndex = Math.max(0, state.activePolygonIndex - 1);
+  ensureOpenPolygon();
 }
 
 uiCanvas.addEventListener("pointerdown", (event) => {
@@ -367,7 +396,12 @@ uiCanvas.addEventListener("pointerdown", (event) => {
     const index = findPointIndex(polygon.points, point, hitRadius);
     if (index !== -1) {
       state.activePolygonIndex = i;
-      state.dragging = { polygonIndex: i, pointIndex: index };
+      state.dragging = {
+        polygonIndex: i,
+        pointIndex: index,
+        startPoint: point,
+        hasMoved: false,
+      };
       uiCanvas.setPointerCapture(event.pointerId);
       renderUI();
       return;
@@ -380,13 +414,21 @@ uiCanvas.addEventListener("pointermove", (event) => {
     return;
   }
   const point = clampPointToImage(canvasPointFromEvent(event));
-  const polygon = state.polygons[state.dragging.polygonIndex];
-  polygon.points[state.dragging.pointIndex] = point;
-  renderAll();
+  const { startPoint } = state.dragging;
+  const dx = point.x - startPoint.x;
+  const dy = point.y - startPoint.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  if (distance > 2) {
+    state.dragging.hasMoved = true;
+    const polygon = state.polygons[state.dragging.polygonIndex];
+    polygon.points[state.dragging.pointIndex] = point;
+    renderAll();
+  }
 });
 
 uiCanvas.addEventListener("pointerup", (event) => {
   if (state.dragging) {
+    state.suppressNextClick = state.dragging.hasMoved;
     state.dragging = null;
     uiCanvas.releasePointerCapture(event.pointerId);
   }
@@ -396,15 +438,27 @@ uiCanvas.addEventListener("click", (event) => {
   if (!state.image) {
     return;
   }
+  if (state.suppressNextClick) {
+    state.suppressNextClick = false;
+    return;
+  }
   const point = canvasPointFromEvent(event);
   if (!isPointInsideImage(point)) {
     return;
   }
   const hitRadius = pointRadius * 2;
-  const polygon = getActivePolygon();
+  let polygon = getActivePolygon();
   if (polygon.closed) {
-    return;
+    const openIndex = state.polygons.findIndex((item) => !item.closed);
+    if (openIndex === -1) {
+      ensureOpenPolygon();
+      polygon = getActivePolygon();
+    } else {
+      state.activePolygonIndex = openIndex;
+      polygon = getActivePolygon();
+    }
   }
+  const hitIndex = findPointIndex(polygon.points, point, hitRadius);
   if (polygon.points.length >= 3) {
     const firstPoint = polygon.points[0];
     const dx = firstPoint.x - point.x;
@@ -415,6 +469,9 @@ uiCanvas.addEventListener("click", (event) => {
       return;
     }
   }
+  if (hitIndex > 0) {
+    return;
+  }
   polygon.points.push(point);
   renderUI();
 });
@@ -422,6 +479,11 @@ uiCanvas.addEventListener("click", (event) => {
 clearPolygonButton.addEventListener("click", () => {
   state.polygons = [{ points: [], closed: false }];
   state.activePolygonIndex = 0;
+  renderAll();
+});
+
+deletePolygonButton.addEventListener("click", () => {
+  deleteActivePolygon();
   renderAll();
 });
 
